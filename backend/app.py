@@ -59,7 +59,18 @@ def new_entry():
     db.session.commit()
     return {"exito": "se ha guardado correctamente"}, 201
 
+@app.route('/entries', methods=['GET'])
+@jwt_required()
+def get_entries():
+    user_id = get_jwt_identity()
+    entries = Entry.query.filter_by(user_id = user_id).all()
+    resultado = []
+    for e in entries:
+        resultado.append({"id": e.id, "content": e.content, "date": e.date})
+    return resultado
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
     app.run(debug=True)
+

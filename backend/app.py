@@ -1,11 +1,16 @@
 from flask import Flask, request
 from extensions import db, bcrypt
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from datetime import datetime
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///diario.db'
 
 db.init_app(app)
 bcrypt.init_app(app)
+jwt = JWTManager(app)
+# La secret key sirve para firmar los tokens, sea cual sea la identidad
+app.config['JWT_SECRET_KEY'] = 'hola'
 
 from models import User, Entry
 
@@ -36,9 +41,24 @@ def login():
     if not username_found:
         return {"error" : "usuario no encontrado"}, 401
     if bcrypt.check_password_hash(username_found.password, password):
-        return {"exito" : "inicio de sesion correcto"}
+        token = create_access_token(identity = str(username_found.id))
+        return {"token": token, "username": username_found.username}
     else:
         return {"error" : "contrasenya incorrecta"}, 401
+
+# En este caso, se juntan dos decoradores. El primero registra la ruta (como los casos anteriores)
+@app.route('/entries', methods=['POST'])
+# El segundo exige que venga un token valido antes de poder entrar
+@jwt_required()
+def new_entry():
+    data = request.get_json()
+    entry_content = data.get('content')
+    user_id = get_jwt_identity()
+    new_entry = Entry(content = entry_content, date = datetime.utcnow(), user_id = user_id)
+    db.session.add(new_entry)
+    db.session.commit()
+    return {"exito": "se ha guardado correctamente"}, 201
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()

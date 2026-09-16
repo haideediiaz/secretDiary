@@ -69,6 +69,33 @@ def get_entries():
         resultado.append({"id": e.id, "content": e.content, "date": e.date})
     return resultado
 
+@app.route('/entries/<int:entry_id>', methods = ['PUT'])
+@jwt_required()
+def edit_entry(entry_id):
+    user_id = int(get_jwt_identity())
+    entry = Entry.query.get(entry_id)
+    if not (entry):
+        return {"error" : "entrada no encontrada"}, 404
+    if (entry.user_id != user_id):
+        return {"error" : "entrada no encontrada"}, 404
+    data = request.get_json()
+    entry.content = data.get('content')
+    db.session.commit()
+    return {"exito" : "se ha editado correctamente"}
+
+@app.route('/entries/<int:entry_id>', methods = ['DELETE'])
+@jwt_required()
+def delete_entry(entry_id):
+    user_id = int(get_jwt_identity())
+    entry = Entry.query.get(entry_id)
+    if not (entry):
+        return {"error" : "entrada no encontrada"}, 404
+    if (entry.user_id != user_id):
+        return {"error" : "entrada no encontrada"}, 404
+    db.session.delete(entry)
+    db.session.commit()
+    return {"exito" : "se ha borrado correctamente"}
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()

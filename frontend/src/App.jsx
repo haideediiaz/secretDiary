@@ -16,7 +16,7 @@ function App() {
         if(info.token){
           localStorage.setItem('token', info.token);
         }else{
-          console.log("NO TOKEN FOR YOU");
+          console.log("NO TOKEN");
         }
       })
     })
